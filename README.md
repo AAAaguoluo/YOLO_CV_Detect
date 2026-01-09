@@ -81,8 +81,7 @@ pytorch
 #打开cmd，在cmd中输入以下指令查看本机IP地址
 ipconfig
 ```
-
-![image-20260109203045404](C:\Users\mjuGGbond\AppData\Roaming\Typora\typora-user-images\image-20260109203045404.png)
+<img width="1056" height="251" alt="image-20260109203045404" src="https://github.com/user-attachments/assets/3ea2771b-1d04-4ca6-95bd-0e8907e04f44" />
 
 查看并记录下本机的IP地址
 
