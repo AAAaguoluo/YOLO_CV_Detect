@@ -89,7 +89,7 @@ ipconfig
 
 将配置项下` BASE_URL`中的IP地址替换成自己的IP地址
 
-![image-20260109203208975](C:\Users\mjuGGbond\AppData\Roaming\Typora\typora-user-images\image-20260109203208975.png)
+<img width="765" height="147" alt="image-20260109203208975" src="https://github.com/user-attachments/assets/3aa77c95-ae8e-41a1-8210-994f25d08a54" />
 
 * 第三步生成 RSA 4096 位私钥 + 自签名 SSL/TLS 证书
 
@@ -113,18 +113,18 @@ ipconfig
   - `cert.pem`：自签名证书（包含公钥，可公开）
 
   若没有更改文件路径，以上文件生成在用户目录下
-
-  ![image-20260109204902484](C:\Users\mjuGGbond\AppData\Roaming\Typora\typora-user-images\image-20260109204902484.png)
+  
+<img width="1329" height="1428" alt="image-20260109204902484" src="https://github.com/user-attachments/assets/9110e33e-a390-4539-8ee3-d1d7ad1d8726" />
 
   若文件不在用户目录下，大家可自行修改
-
-  ![image-20260109205224559](C:\Users\mjuGGbond\AppData\Roaming\Typora\typora-user-images\image-20260109205224559.png)
+  
+<img width="867" height="268" alt="image-20260109205224559" src="https://github.com/user-attachments/assets/2f43bbb6-6edb-4771-8865-28b94d4b1847" />
 
 * 第四步运行` main.py`后端文件
 
 看到如下情况则说明后端服务成功启动
 
-![image-20260109203416470](C:\Users\mjuGGbond\AppData\Roaming\Typora\typora-user-images\image-20260109203416470.png)
+<img width="1691" height="473" alt="image-20260109203416470" src="https://github.com/user-attachments/assets/fca52c15-0471-4c19-b0d4-b917a85db9f5" />
 
 按下` ctrl + c`可退出后端服务
 
@@ -132,9 +132,9 @@ ipconfig
 
 在浏览器中输入服务器的URL，就能够成功进入了！！！
 
-![image-20260109205525607](C:\Users\mjuGGbond\AppData\Roaming\Typora\typora-user-images\image-20260109205525607.png)
+<img width="1367" height="80" alt="image-20260109205525607" src="https://github.com/user-attachments/assets/360ae1bc-08f7-4938-b78e-9aaac016649d" />
 
-![image-20260109205611343](C:\Users\mjuGGbond\AppData\Roaming\Typora\typora-user-images\image-20260109205611343.png)
+<img width="1836" height="1449" alt="image-20260109205611343" src="https://github.com/user-attachments/assets/80041477-bdfe-4a12-afa3-2540cb3cbb46" />
 
 # Thanking
 
