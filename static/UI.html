@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOLO害虫检测系统</title>
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 全局样式重置 */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Microsoft YaHei', sans-serif; }
+        body { background-color: #f5f5f5; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 20px; }
+        
+        /* 头部样式 */
+        .header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+        .header h1 { color: #2d3748; margin-bottom: 10px; }
+        .header p { color: #718096; }
+        
+        /* 标签页样式 */
+        .tabs { display: flex; border-bottom: 1px solid #cbd5e0; margin-bottom: 20px; flex-wrap: wrap;}
+        .tab-btn { padding: 10px 20px; background: none; border: none; cursor: pointer; font-size: 16px; color: #4a5568; border-bottom: 2px solid transparent; transition: all 0.3s; }
+        .tab-btn.active { color: #4299e1; border-bottom: 2px solid #4299e1; font-weight: bold; }
+        .tab-btn:hover { color: #4299e1; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+        
+        /* 卡片样式 */
+        .card { background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .card-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #2d3748; display: flex; align-items: center; }
+        .card-title i { margin-right: 10px; color: #4299e1; }
+        
+        /* 上传区域样式 */
+        .upload-area { border: 2px dashed #cbd5e0; border-radius: 8px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.3s; background-color: #fafafa; }
+        .upload-area:hover { border-color: #4299e1; background-color: #f0f8fb; }
+        .upload-icon { font-size: 48px; color: #718096; margin-bottom: 15px; }
+        .upload-text { font-size: 16px; color: #4a5568; margin-bottom: 10px; }
+        .upload-hint { font-size: 14px; color: #718096; }
+        
+        /* 图片/视频预览样式 */
+        .image-preview, .result-image { max-width: 100%; max-height: 400px; border-radius: 8px; margin: 10px auto; display: block; }
+        video.image-preview, video.result-image { width: 100%; max-height: 400px; }
+        
+        /* 置信度滑块样式 */
+        .confidence-control { display: flex; align-items: center; margin-bottom: 15px; }
+        .confidence-control label { min-width: 100px; color: #4a5568; font-weight: 500; }
+        .confidence-slider { flex: 1; margin: 0 15px; }
+        .confidence-value { min-width: 80px; color: #718096; }
+        
+        /* 按钮样式 */
+        .btn { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; transition: all 0.3s; }
+        .btn-primary { background-color: #4299e1; color: white; }
+        .btn-primary:hover { background-color: #3182ce; }
+        .btn-danger { background-color: #e53e3e; color: white; } 
+        .btn-secondary { background-color: #718096; color: white; }
+        .btn-secondary:hover { background-color: #4a5568; }
+        .btn-block { width: 100%; margin-bottom: 20px; }
+        
+        /* 结果文本框样式 */
+        .result-text { width: 100%; height: 200px; border: 1px solid #cbd5e0; border-radius: 8px; padding: 15px; font-size: 14px; resize: none; }
+        
+        /* 批量检测布局 */
+        .batch-predict { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 768px) { .batch-predict { grid-template-columns: repeat(2, 1fr); } }
+        
+        /* 保存区域样式 */
+        .save-section { margin-top: 20px; padding: 15px; background-color: #e6fffa; border-radius: 8px; border-left: 4px solid #4299e1; }
+        .save-section h3 { color: #2d3748; margin-bottom: 10px; }
+        
+        /* 批量结果网格 */
+        .batch-results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
+            gap: 20px;
+            margin-top: 15px;
+        }
+        .batch-result-item {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        .batch-result-img {
+            width: 100%;
+            height: 200px;
+            object-fit: contain;
+            border-radius: 6px;
+            border: 1px solid #edf2f7;
+            background-color: #f7fafc;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        .batch-result-filename {
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 8px;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .batch-detail-text {
+            width: 100%;
+            height: 120px;
+            font-size: 12px;
+            color: #4a5568;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            padding: 8px;
+            background-color: #fafafa;
+            resize: none;
+            font-family: Consolas, Monaco, monospace;
+            line-height: 1.4;
+        }
+        
+        /* 摄像头样式 */
+        .camera-box { position: relative; width: 100%; max-width: 640px; margin: 0 auto; background: #000; border-radius: 8px; overflow: hidden; min-height: 480px;}
+        .camera-view { width: 100%; height: 100%; object-fit: contain; display: block;}
+        .camera-controls { text-align: center; margin-top: 20px; display: flex; justify-content: center; gap: 20px;}
+        
+        /* 状态栏样式 */
+        #connectionStatus {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: #4299e1;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+        #connectionStatus.connected { background: #38a169; }
+        #connectionStatus.disconnected { background: #e53e3e; }
+        #connectionStatus.warning { background: #ed8936; }
+        
+        /* 摄像头HTTPS提示样式 */
+        .https-warning {
+            padding: 10px;
+            background-color: #fef7fb;
+            border: 1px solid #fbb6ce;
+            border-radius: 4px;
+            color: #c53030;
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>YOLO水稻害虫检测系统</h1>
+            <p>集成图像、视频及实时摄像头的综合检测平台</p>
+        </div>
+
+        <!-- 标签页切换 -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="single">单张图片</button>
+            <button class="tab-btn" data-tab="batch">批量图片</button>
+            <button class="tab-btn" data-tab="video">视频检测</button>
+            <button class="tab-btn" data-tab="camera">实时摄像头</button>
+            <button class="tab-btn" data-tab="system">系统信息</button>
+        </div>
+
+        <!-- 1. 单张图片预测 -->
+        <div class="tab-pane active" id="single">
+            <div class="card">
+                <div class="card-title"><i class="fas fa-image"></i> 上传图片</div>
+                <div class="upload-area" id="singleUploadArea">
+                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                    <div class="upload-text">将图片拖放至此处 或 点击上传</div>
+                    <div class="upload-hint">支持格式: JPG、PNG</div>
+                    <img id="previewImage" class="image-preview" style="display: none;">
+                </div>
+                <input type="file" id="singleUploadImage" accept="image/*" style="display: none;">
+            </div>
+
+            <div class="card">
+                <div class="card-title"><i class="fas fa-sliders-h"></i> 参数设置</div>
+                <div class="confidence-control">
+                    <label>置信度阈值: </label>
+                    <input type="range" min="10" max="100" value="25" class="confidence-slider" id="singleConfidenceSlider">
+                    <div class="confidence-value"><span id="singleConfidenceValue">0.25</span></div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary btn-block" id="singlePredictBtn"><i class="fas fa-play"></i> 开始预测</button>
+
+            <div class="card">
+                <div class="card-title"><i class="fas fa-image"></i> 检测结果</div>
+                <div class="upload-area">
+                    <img id="resultImage" class="result-image" style="display: none;">
+                    <div id="resultPlaceholder" class="upload-text">结果将显示在这里</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title"><i class="fas fa-file-alt"></i> 详细数据</div>
+                <textarea class="result-text" id="singleResultText" placeholder="等待预测..."></textarea>
+            </div>
+            <div class="save-section" id="singleSaveSection" style="display: none;">
+                <h3><i class="fas fa-save"></i> 保存结果</h3>
+                <button class="btn btn-secondary btn-block" id="saveSingleResultBtn">保存检测结果</button>
+                <p id="saveStatusText" style="margin-top: 10px; color: #4299e1; display: none;"></p>
+            </div>
+        </div>
+
+        <!-- 2. 批量图片预测 -->
+        <div class="tab-pane" id="batch">
+            <div class="batch-predict">
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-images"></i> 批量上传</div>
+                    <div class="upload-area" id="batchUploadArea">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <div class="upload-text">点击上传多张图片</div>
+                    </div>
+                    <input type="file" id="batchUploadImage" multiple accept="image/*" style="display: none;">
+                </div>
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-sliders-h"></i> 参数</div>
+                    <div class="confidence-control">
+                        <label>置信度: </label>
+                        <input type="range" min="10" max="100" value="25" class="confidence-slider" id="batchConfidenceSlider">
+                        <div class="confidence-value"><span id="batchConfidenceValue">0.25</span></div>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-block" id="batchPredictBtn"><i class="fas fa-play"></i> 批量预测</button>
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-file-alt"></i> 结果统计</div>
+                    <textarea class="result-text" id="batchResultText" placeholder="批量结果..."></textarea>
+                </div>
+                <div class="card" id="batchResultPreviewCard" style="display: none;">
+                    <div class="card-title"><i class="fas fa-th-large"></i> 批量结果预览</div>
+                    <div id="batchResultsPreview" class="batch-results-grid"></div>
+                </div>
+                <div class="save-section" id="batchSaveSection" style="display: none;">
+                    <h3><i class="fas fa-save"></i> 保存结果</h3>
+                    <button class="btn btn-secondary btn-block" id="saveBatchResultBtn">保存批量结果</button>
+                    <p id="batchSaveStatusText" style="margin-top: 10px; color: #4299e1; display: none;"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 视频检测 -->
+        <div class="tab-pane" id="video">
+            <div class="card">
+                <div class="card-title"><i class="fas fa-video"></i> 上传视频</div>
+                <div class="upload-area" id="videoUploadArea">
+                    <i class="fas fa-film upload-icon"></i>
+                    <div class="upload-text">点击上传视频文件 (MP4)</div>
+                    <div class="upload-hint">注意：大文件处理时间较长</div>
+                    <video id="previewVideo" class="image-preview" controls style="display: none;"></video>
+                </div>
+                <input type="file" id="videoUpload" accept="video/*" style="display: none;">
+            </div>
+
+            <div class="card">
+                <div class="card-title"><i class="fas fa-sliders-h"></i> 视频参数</div>
+                <div class="confidence-control">
+                    <label>置信度: </label>
+                    <input type="range" min="10" max="100" value="25" class="confidence-slider" id="videoConfidenceSlider">
+                    <div class="confidence-value"><span id="videoConfidenceValue">0.25</span></div>
+                </div>
+                <div class="confidence-control">
+                    <label>抽帧间隔: </label>
+                    <input type="number" id="frameInterval" value="5" min="1" max="60" style="padding: 5px; border: 1px solid #ddd; border-radius: 4px; width: 60px;">
+                    <span style="color: #718096; font-size: 14px; margin-left: 10px;">(每隔几帧检测一次，越小越慢)</span>
+                </div>
+            </div>
+
+            <button class="btn btn-primary btn-block" id="videoPredictBtn"><i class="fas fa-play"></i> 开始视频检测</button>
+
+            <div class="card" style="display: none;">
+                <div class="card-title"><i class="fas fa-film"></i>  </div>
+                <div class="upload-area">
+                    <video id="detectResultVideo" class="result-image" controls style="display: none;"></video>
+                    <div id="videoResultPlaceholder" class="upload-text"></div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title"><i class="fas fa-file-alt"></i> 视频统计</div>
+                <textarea class="result-text" id="videoResultText" placeholder="视频统计信息..."></textarea>
+            </div>
+            <!-- 新增：视频结果保存区域 -->
+            <div class="save-section" id="videoSaveSection" style="display: none;">
+                <h3><i class="fas fa-save"></i> 保存视频检测结果</h3>
+                <button class="btn btn-secondary btn-block" id="saveVideoResultBtn">保存检测结果（视频+统计）</button>
+                <p id="videoSaveStatusText" style="margin-top: 10px; color: #4299e1; display: none;"></p>
+            </div>
+        </div>
+
+        <!-- 4. 实时摄像头检测 -->
+        <div class="tab-pane" id="camera">
+            <div class="card">
+                <div class="card-title"><i class="fas fa-camera"></i> 实时监控</div>
+                
+                <!-- HTTPS提示 -->
+                <div class="https-warning" id="httpsWarning">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    提示：摄像头功能在HTTPS协议下兼容性更好，HTTP可能存在访问限制！
+                </div>
+                
+                <div class="camera-box">
+                    <video id="webcam" autoplay muted playsinline style="display:none;"></video>
+                    <canvas id="canvas" style="display:none;"></canvas>
+                    <img id="cameraResult" class="camera-view" src="https://via.placeholder.com/640x480?text=Camera+Off" alt="Stream">
+                </div>
+                
+                <div class="camera-controls">
+                    <button class="btn btn-primary" id="startCameraBtn"><i class="fas fa-video"></i> 打开摄像头</button>
+                    <button class="btn btn-danger" id="stopCameraBtn" disabled><i class="fas fa-stop"></i> 关闭摄像头</button>
+                </div>
+                <div style="margin-top: 15px; text-align: center; color: #718096;">
+                    <i class="fas fa-info-circle"></i> 提示：画面延迟取决于网络和服务器性能
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. 系统信息 -->
+        <div class="tab-pane" id="system">
+            <div class="card">
+                <div class="card-title"><i class="fas fa-info-circle"></i> 系统信息</div>
+                <div id="systemInfo" style="line-height: 1.8; color: #4a5568;">
+                    <p><strong>功能模块：</strong>图片检测 / 批量处理 / 视频分析 / 实时监控</p>
+                    <p><strong>API 状态：</strong><span id="apiStatus">检测中...</span></p>
+                    <p><strong>WebSocket：</strong><span id="wsUrl">检测中...</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 状态栏 -->
+    <div id="connectionStatus" class="warning">
+        正在检测服务器连接...
+    </div>
+
+   <script> 
+    // ========== 全局配置和变量 ==========
+    // 固定后端地址（匹配后端配置）
+   // const SERVER_BASE_URL = 'http://172.27.119.58:8000';
+    //const WEBSOCKET_URL = `ws://172.27.119.58:8000/ws/camera`;
+
+        // ========== 全局配置和变量 ==========
+    // 修复：自动适配页面协议（HTTP/HTTPS），不再硬编码IP和协议
+    const SERVER_BASE_URL = `${window.location.protocol}//${window.location.host}`;
+    // 修复：WebSocket协议自动适配（ws/wss）
+    const WEBSOCKET_URL = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/camera`;
+
+    let currentSingleResult = null;
+    let currentBatchResult = null;
+    let ws = null;
+    let streamInterval = null;
+    let localStream = null;
+    let isCameraActive = false;
+    
+
+
+    // ========== 工具函数 ==========
+    function updateConnectionStatus(message, type = 'warning') {
+        const statusDiv = document.getElementById('connectionStatus');
+        statusDiv.textContent = message;
+        statusDiv.className = type;
+        console.log('连接状态:', message);
+    }
+
+    // ========== 摄像头功能 (核心修复) ==========
+    async function startCamera() {
+        if (isCameraActive) return;
+        
+        // 1. 安全环境检查提示
+        if (!window.isSecureContext) {
+            alert(`
+                浏览器安全策略提示：
+                1. HTTP协议下访问摄像头可能存在限制
+                2. 建议使用HTTPS协议访问本系统
+                3. 如使用Chrome/Edge，可在地址栏输入 chrome://flags/#unsafely-treat-insecure-origin-as-secure
+                   将 http://172.27.119.58:8000 添加为安全来源
+            `);
+        }
+
+        const startBtn = document.getElementById('startCameraBtn');
+        const stopBtn = document.getElementById('stopCameraBtn');
+        const resultImg = document.getElementById('cameraResult');
+        
+        try {
+            // 请求摄像头
+            localStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: { ideal: 640 }, // 限制分辨率提高传输速度
+                    height: { ideal: 480 },
+                    facingMode: 'environment' 
+                },
+                audio: false
+            });
+            
+            // 本地预览
+            const webcamVideo = document.getElementById('webcam');
+            webcamVideo.srcObject = localStream;
+            await webcamVideo.play();
+            
+            // 建立 WebSocket
+            console.log('连接WebSocket:', WEBSOCKET_URL);
+            ws = new WebSocket(WEBSOCKET_URL);
+            
+            ws.onopen = function() {
+                console.log('WebSocket已连接');
+                isCameraActive = true;
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                resultImg.style.opacity = '1';
+                updateConnectionStatus('摄像头已连接', 'connected');
+                
+                // 发送帧循环（降低帧率减少延迟）
+                streamInterval = setInterval(() => {
+                    if (ws.readyState === WebSocket.OPEN && isCameraActive) {
+                        captureAndSendFrame();
+                    }
+                }, 100); // 100ms = 10 FPS
+            };
+            
+            ws.onmessage = function(event) {
+                resultImg.src = event.data;
+            };
+            
+            ws.onerror = function(e) {
+                console.error('WebSocket错误:', e);
+                stopCamera();
+                updateConnectionStatus('摄像头连接出错', 'disconnected');
+                alert('WebSocket连接中断，请检查网络或服务器状态');
+            };
+            
+            ws.onclose = function() {
+                if (isCameraActive) {
+                    stopCamera();
+                    updateConnectionStatus('摄像头连接已关闭', 'warning');
+                }
+            }
+            
+        } catch (error) {
+            console.error('摄像头访问错误:', error);
+            updateConnectionStatus('摄像头访问失败', 'disconnected');
+            
+            // 错误分类提示
+            if (error.name === 'NotAllowedError') {
+                alert('无法访问摄像头：您未授予摄像头访问权限，请在浏览器设置中允许');
+            } else if (error.name === 'NotFoundError') {
+                alert('无法访问摄像头：未检测到可用的摄像头设备');
+            } else {
+                alert('无法访问摄像头: ' + error.message);
+            }
+            stopCamera();
+        }
+    }
+
+    function captureAndSendFrame() {
+        const webcamVideo = document.getElementById('webcam');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 压缩发送尺寸 (320x240) 减少网络传输
+        canvas.width = 320;
+        canvas.height = 240;
+        
+        ctx.drawImage(webcamVideo, 0, 0, canvas.width, canvas.height);
+        
+        // 降低图片质量 (0.6) 提高流畅度
+        const dataURL = canvas.toDataURL('image/jpeg', 0.6);
+        ws.send(dataURL);
+    }
+
+    function stopCamera() {
+        isCameraActive = false;
+        updateConnectionStatus('摄像头已关闭', 'warning');
+        
+        if (streamInterval) clearInterval(streamInterval);
+        if (ws) ws.close();
+        if (localStream) localStream.getTracks().forEach(track => track.stop());
+        
+        document.getElementById('webcam').srcObject = null;
+        document.getElementById('cameraResult').src = "https://via.placeholder.com/640x480?text=Camera+Off";
+        document.getElementById('startCameraBtn').disabled = false;
+        document.getElementById('stopCameraBtn').disabled = true;
+    }
+        // ========== 摄像头WebSocket管理 ==========
+function initWebSocket() {
+    // 关闭已有连接
+    if (ws) {
+        ws.close();
+    }
+    
+    // 创建新连接
+    ws = new WebSocket(WEBSOCKET_URL);
+    
+    ws.onopen = () => {
+        updateConnectionStatus('WebSocket已连接', 'connected');
+    };
+    
+    ws.onclose = () => {
+        updateConnectionStatus('WebSocket已断开', 'disconnected');
+        // 断线重连（可选）
+        if (isCameraActive) {
+            setTimeout(initWebSocket, 3000);
+        }
+    };
+    
+    ws.onerror = (error) => {
+        updateConnectionStatus(`WebSocket错误: ${error.message}`, 'disconnected');
+    };
+    
+    ws.onmessage = (event) => {
+        // 处理后端返回的摄像头帧数据
+        try {
+            const cameraResult = document.getElementById('cameraResult');
+            cameraResult.src = event.data;
+        } catch (err) {
+            console.error('处理摄像头数据失败:', err);
+        }
+    };
+}
+
+
+
+    // ========== 页面初始化 ==========
+    document.addEventListener('DOMContentLoaded', function() {
+        initTabs();
+        initServerConfig();
+        initEventListeners();
+        checkApiStatus(); // 检测API连接状态
+    });
+
+    // ========== 基础初始化函数 ==========
+    function initTabs() {
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabPanes = document.querySelectorAll('.tab-pane');
+        
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // 切换标签页样式
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabPanes.forEach(p => { 
+                    p.classList.remove('active'); 
+                    p.style.display = 'none'; 
+                });
+                
+                btn.classList.add('active');
+                const activePane = document.getElementById(btn.getAttribute('data-tab'));
+                activePane.classList.add('active');
+                activePane.style.display = 'block';
+                
+                // 切换标签页时关闭摄像头
+                if (btn.getAttribute('data-tab') !== 'camera') {
+                    stopCamera();
+                }
+            });
+        });
+    }
+
+    function initServerConfig() {
+        updateConnectionStatus(`已连接到服务器: 172.27.119.58:8000`, 'connected');
+        updateCameraTabInfo();
+    }
+
+    function updateCameraTabInfo() {
+        const isSecure = window.isSecureContext;
+        document.getElementById('systemInfo').innerHTML = `
+            <p><strong>API 地址：</strong>${SERVER_BASE_URL}</p>
+            <p><strong>WebSocket：</strong>${WEBSOCKET_URL}</p>
+            <p><strong>当前协议：</strong>${window.location.protocol === 'https:' ? 'HTTPS (推荐)' : 'HTTP'}</p>
+            <p><strong>安全环境：</strong>${isSecure ? 
+                '<span style="color:green">✅ 安全 (支持摄像头)</span>' : 
+                '<span style="color:red">⚠️ 不安全 (HTTP需配置浏览器)</span>'}</p>
+        `;
+    }
+
+    // 检测API连接状态
+    async function checkApiStatus() {
+        try {
+            const response = await fetch(`${SERVER_BASE_URL}/`, { method: 'GET' });
+            if (response.ok) {
+                document.getElementById('apiStatus').innerHTML = '<span style="color:green">已连接</span>';
+                document.getElementById('wsUrl').textContent = WEBSOCKET_URL;
+            } else {
+                document.getElementById('apiStatus').innerHTML = '<span style="color:red">连接失败</span>';
+                updateConnectionStatus('服务器连接失败', 'disconnected');
+            }
+        } catch (error) {
+            document.getElementById('apiStatus').innerHTML = '<span style="color:red">无法访问</span>';
+            updateConnectionStatus('无法连接到服务器', 'disconnected');
+        }
+    }
+
+    // ========== 事件监听初始化 ==========
+    function initEventListeners() {
+        // 摄像头按钮事件
+        document.getElementById('startCameraBtn').addEventListener('click', startCamera);
+        document.getElementById('stopCameraBtn').addEventListener('click', stopCamera);
+        
+        // 文件上传事件
+        setupFileUpload('singleUploadArea', 'singleUploadImage', 'previewImage');
+        setupFileUpload('batchUploadArea', 'batchUploadImage', null);
+        
+       /* // 视频上传预览
+        document.getElementById('videoUploadArea').addEventListener('click', () => {
+            document.getElementById('videoUpload').click();
+        });
+        document.getElementById('videoUpload').addEventListener('change', (e) => {
+            if(e.target.files[0]) {
+                const video = document.getElementById('previewVideo');
+                video.src = URL.createObjectURL(e.target.files[0]);
+                video.style.display = 'block';
+                // 释放URL对象防止内存泄漏
+                video.onload = () => {
+                    URL.revokeObjectURL(video.src);
+                }
+            }
+        });*/
+
+        // ========== 视频检测功能（补充预览+保存） ==========
+        // 视频上传预览
+        document.getElementById('videoUploadArea').addEventListener('click', () => {
+            document.getElementById('videoUpload').click();
+        });
+
+        document.getElementById('videoUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const videoPreview = document.getElementById('previewVideo');
+                videoPreview.src = URL.createObjectURL(file);
+                videoPreview.style.display = 'block';
+            }
+        });
+
+        // 置信度滑块更新
+        const videoConfidenceSlider = document.getElementById('videoConfidenceSlider');
+        const videoConfidenceValue = document.getElementById('videoConfidenceValue');
+        videoConfidenceSlider.addEventListener('input', () => {
+            const value = (videoConfidenceSlider.value / 100).toFixed(2);
+            videoConfidenceValue.textContent = value;
+        });
+
+        // 视频检测按钮点击事件
+        document.getElementById('videoPredictBtn').addEventListener('click', async () => {
+            const fileInput = document.getElementById('videoUpload');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('请先上传视频文件！');
+                return;
+            }
+
+            // 构建FormData
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('confidence', (videoConfidenceSlider.value / 100).toFixed(2));
+            formData.append('interval', document.getElementById('frameInterval').value);
+
+            try {
+                updateConnectionStatus('正在处理视频，请稍候...', 'warning');
+                
+                // 调用后端接口
+                const response = await fetch(`${SERVER_BASE_URL}/api/video-predict`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    // 显示处理后的视频预览
+                    const resultVideo = document.getElementById('detectResultVideo');
+                    const placeholder = document.getElementById('videoResultPlaceholder');
+                    resultVideo.src = result.processed_video_url;
+                    resultVideo.style.display = 'block';
+                    placeholder.style.display = 'none';
+
+                    // 显示统计信息
+                    const resultText = document.getElementById('videoResultText');
+                    const statsText = `
+        视频检测完成！
+        原始文件名：${result.original_filename}
+        总帧数：${result.total_frames}
+        检测帧数：${result.detected_frames}
+        抽帧间隔：${result.interval}
+        置信度：${result.confidence}
+        处理耗时：${result.total_time}秒
+        分辨率：${result.resolution}
+        FPS：${result.fps}
+
+        检测类别统计：
+        ${JSON.stringify(result.class_stats, null, 2)}
+                    `;
+                    resultText.value = statsText;
+
+                    // 保存结果到全局变量，供保存按钮使用
+                    window.currentVideoResult = result;
+
+                    // 显示保存区域
+                    document.getElementById('videoSaveSection').style.display = 'block';
+                    updateConnectionStatus('视频处理完成！', 'connected');
+                } else {
+                    alert(`检测失败：${result.error}`);
+                    updateConnectionStatus(`视频处理失败：${result.error}`, 'disconnected');
+                }
+            } catch (error) {
+                console.error('视频检测错误:', error);
+                alert('视频检测出错，请检查服务器！');
+                updateConnectionStatus('视频处理出错', 'disconnected');
+            }
+        });
+
+        // 视频结果保存按钮点击事件
+        document.getElementById('saveVideoResultBtn').addEventListener('click', async () => {
+            if (!window.currentVideoResult) {
+                alert('暂无视频检测结果可保存！');
+                return;
+            }
+
+            const result = window.currentVideoResult;
+            const formData = new FormData();
+            formData.append('original_filename', result.original_filename);
+            formData.append('processed_video_url', result.processed_video_url);
+            formData.append('total_frames', result.total_frames);
+            formData.append('detected_frames', result.detected_frames);
+            formData.append('interval', result.interval);
+            formData.append('confidence', result.confidence);
+            formData.append('class_stats', JSON.stringify(result.class_stats));
+            formData.append('total_time', result.total_time);
+
+            try {
+                updateConnectionStatus('正在保存视频结果...', 'warning');
+                
+                const response = await fetch(`${SERVER_BASE_URL}/api/save-video-result`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const saveResult = await response.json();
+                if (saveResult.success) {
+                    // 显示保存状态
+                    const statusText = document.getElementById('videoSaveStatusText');
+                    statusText.textContent = `保存成功！点击下载：${saveResult.download_url}`;
+                    statusText.style.display = 'block';
+                    // 创建下载链接
+                    statusText.innerHTML = `保存成功！<a href="${saveResult.download_url}" target="_blank" style="color: #4299e1;">点击下载结果包</a>`;
+                    updateConnectionStatus('视频结果保存成功！', 'connected');
+                } else {
+                    alert(`保存失败：${saveResult.error}`);
+                    updateConnectionStatus(`保存失败：${saveResult.error}`, 'disconnected');
+                }
+            } catch (error) {
+                console.error('保存视频结果错误:', error);
+                alert('保存视频结果出错，请检查服务器！');
+                updateConnectionStatus('保存视频结果出错', 'disconnected');
+            }
+        });
+
+        // 置信度滑块事件
+        ['single', 'batch', 'video'].forEach(type => {
+            const slider = document.getElementById(`${type}ConfidenceSlider`);
+            if(slider) {
+                slider.addEventListener('input', e => {
+                    const value = (e.target.value/100).toFixed(2);
+                    document.getElementById(`${type}ConfidenceValue`).textContent = value;
+                });
+            }
+        });
+
+        // 功能按钮事件绑定
+        document.getElementById('singlePredictBtn').addEventListener('click', predictSingleImage);
+        document.getElementById('saveSingleResultBtn').addEventListener('click', saveSingleResult);
+        
+        document.getElementById('batchPredictBtn').addEventListener('click', predictBatchImages);
+        document.getElementById('saveBatchResultBtn').addEventListener('click', saveBatchResult);
+        
+        document.getElementById('videoPredictBtn').addEventListener('click', predictVideo);
+    }
+
+    // ========== 文件上传通用函数 ==========
+    function setupFileUpload(areaId, inputId, imgId) {
+        const area = document.getElementById(areaId);
+        const input = document.getElementById(inputId);
+        
+        // 点击上传区域触发文件选择
+        area.addEventListener('click', () => input.click());
+        
+        // 文件选择后处理
+        input.addEventListener('change', (e) => {
+            // 单张图片预览
+            if (imgId && e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    const img = document.getElementById(imgId);
+                    img.src = ev.target.result;
+                    img.style.display = 'block';
+                };
+                reader.readAsDataURL(e.target.files[0]);
+            }
+            
+            // 批量上传显示选择数量
+            if (inputId === 'batchUploadImage' && e.target.files.length > 0) {
+                 document.querySelector(`#${areaId} .upload-text`).textContent = 
+                     `已选择 ${e.target.files.length} 张图片`;
+            }
+        });
+        
+        // 拖放上传支持
+        area.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            area.style.borderColor = '#4299e1';
+            area.style.backgroundColor = '#f0f8fb';
+        });
+        
+        area.addEventListener('dragleave', () => {
+            area.style.borderColor = '#cbd5e0';
+            area.style.backgroundColor = '#fafafa';
+        });
+        
+        area.addEventListener('drop', (e) => {
+            e.preventDefault();
+            area.style.borderColor = '#cbd5e0';
+            area.style.backgroundColor = '#fafafa';
+            
+            if (e.dataTransfer.files.length > 0) {
+                input.files = e.dataTransfer.files;
+                // 触发change事件
+                const event = new Event('change');
+                input.dispatchEvent(event);
+            }
+        });
+    }
+
+    // ========== API调用通用函数 ==========
+    async function callAPI(endpoint, formData) {
+        try {
+            updateConnectionStatus('正在请求服务器...', 'warning');
+            const response = await fetch(`${SERVER_BASE_URL}${endpoint}`, { 
+                method: 'POST', 
+                body: formData,
+                timeout: 30000 // 30秒超时
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP错误：${response.status}`);
+            }
+            
+            const result = await response.json();
+            updateConnectionStatus('请求成功', 'connected');
+            return result;
+        } catch (error) {
+            updateConnectionStatus('请求失败: ' + error.message, 'disconnected');
+            alert('网络请求失败: ' + error.message);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // ========== 业务逻辑函数 ==========
+    /**
+     * 单张图片检测
+     */
+    async function predictSingleImage() {
+        const fileInput = document.getElementById('singleUploadImage');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert('请先上传图片！');
+            return;
+        }
+        
+        // 按钮状态更新
+        const btn = document.getElementById('singlePredictBtn');
+        btn.disabled = true; 
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 检测中...';
+        
+        // 构建表单数据
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('confidence', document.getElementById('singleConfidenceValue').textContent);
+        
+        // 调用API
+        const res = await callAPI('/api/predict', fd);
+        
+        if (res.success) {
+            currentSingleResult = res;
+            
+            // 显示检测结果
+            const resultImg = document.getElementById('resultImage');
+            resultImg.src = res.annotated_image_url;
+            resultImg.style.display = 'block';
+            document.getElementById('resultPlaceholder').style.display = 'none';
+            
+            // 显示详细数据（格式化JSON）
+            document.getElementById('singleResultText').value = JSON.stringify({
+                检测耗时: `${res.detect_time}秒`,
+                检测总数: res.total_detections,
+                详细检测结果: res.detections
+            }, null, 2);
+            
+            // 显示保存区域
+            document.getElementById('singleSaveSection').style.display = 'block';
+        } else {
+            alert('检测失败：' + (res.error || '未知错误'));
+        }
+        
+        // 恢复按钮状态
+        btn.disabled = false; 
+        btn.innerHTML = '<i class="fas fa-play"></i> 开始预测';
+    }
+
+    /**
+     * 保存单张检测结果（下载ZIP）
+     */
+    async function saveSingleResult() {
+        if (!currentSingleResult) {
+            alert('暂无检测结果可保存！');
+            return;
+        }
+        
+        const saveBtn = document.getElementById('saveSingleResultBtn');
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在保存...';
+        
+        try {
+            const fd = new FormData();
+            fd.append('original_filename', currentSingleResult.original_filename);
+            fd.append('confidence', parseFloat(document.getElementById('singleConfidenceValue').textContent));
+            fd.append('detect_time', currentSingleResult.detect_time);
+            fd.append('detections', JSON.stringify(currentSingleResult.detections));
+            fd.append('image_data', currentSingleResult.annotated_image_url);
+            
+            const res = await callAPI('/api/save-single-result', fd);
+            
+            if (res.success && res.download_url) {
+                // 触发下载
+                window.open(res.download_url, '_blank');
+                
+                // 显示保存状态
+                const statusText = document.getElementById('saveStatusText');
+                statusText.style.display = 'block';
+                statusText.textContent = '✅ 保存成功，下载链接已打开！';
+                
+                // 3秒后清空状态
+                setTimeout(() => {
+                    statusText.textContent = '';
+                }, 3000);
+            } else {
+                alert('保存失败：' + (res.error || '未知错误'));
+            }
+        } catch (error) {
+            alert('保存失败：' + error.message);
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '保存检测结果';
+        }
+    }
+
+    /**
+     * 批量图片检测
+     */
+    async function predictBatchImages() {
+        const fileInput = document.getElementById('batchUploadImage');
+        const files = fileInput.files;
+        
+        if (!files || files.length === 0) {
+            alert('请选择要检测的图片！');
+            return;
+        }
+        
+        // 按钮状态更新
+        const btn = document.getElementById('batchPredictBtn');
+        btn.disabled = true; 
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 处理中...';
+        
+        // 构建表单数据
+        const fd = new FormData();
+        for(let f of files) {
+            fd.append('files', f);
+        }
+        fd.append('confidence', document.getElementById('batchConfidenceValue').textContent);
+        
+        // 调用API
+        const res = await callAPI('/api/batch-predict', fd);
+        
+        if (res.success) {
+            currentBatchResult = res;
+            
+            // 显示统计结果
+            let statsText = `
+批量检测结果统计：
+====================
+总文件数：${res.total_files}
+成功检测：${res.success_count}
+检测失败：${res.failed_count}
+总耗时：${res.total_time}秒
+
+类别统计：
+${Object.entries(res.class_stats).map(([cls, count]) => `${cls}: ${count}个`).join('\n')}
+
+详细结果请查看下方预览区域
+            `;
+            document.getElementById('batchResultText').value = statsText;
+            
+            // 显示批量结果预览（修复：展示所有不同结果）
+            const grid = document.getElementById('batchResultsPreview');
+            grid.innerHTML = ''; // 清空原有内容
+            
+            // 遍历所有检测结果
+            res.detection_results.forEach((item, index) => {
+                // 构建详细信息文本
+                let detailText = '';
+                let imgSrc = 'https://via.placeholder.com/320x200?text=Failed';
+                
+                if (item.success) {
+                    imgSrc = item.annotated_image_url;
+                    detailText = JSON.stringify({
+                        文件名: item.original_filename,
+                        检测耗时: `${item.detect_time}秒`,
+                        检测数量: item.total_detections,
+                        检测结果: item.detections
+                    }, null, 2);
+                } else {
+                    detailText = `检测失败：${item.error || '未知错误'}`;
+                }
+                
+                // 创建结果项
+                const resultItem = document.createElement('div');
+                resultItem.className = 'batch-result-item';
+                resultItem.innerHTML = `
+                    <img src="${imgSrc}" class="batch-result-img" 
+                         onclick="window.open('${imgSrc}', '_blank')"
+                         title="点击查看大图">
+                    <div class="batch-result-filename">${index + 1}. ${item.filename || item.original_filename || '未知文件'}</div>
+                    <textarea class="batch-detail-text" readonly>${detailText}</textarea>
+                `;
+                
+                grid.appendChild(resultItem);
+            });
+            
+            // 显示预览区域和保存区域
+            document.getElementById('batchResultPreviewCard').style.display = 'block';
+            document.getElementById('batchSaveSection').style.display = 'block';
+            
+            // 自动下载批量结果ZIP（可选）
+            if (res.zip_url) {
+                // 提示用户下载
+                if (confirm('批量检测完成，是否立即下载所有结果？')) {
+                    window.open(res.zip_url, '_blank');
+                }
+            }
+        } else {
+            alert('批量检测失败：' + (res.error || '未知错误'));
+        }
+        
+        // 恢复按钮状态
+        btn.disabled = false; 
+        btn.innerHTML = '<i class="fas fa-play"></i> 批量预测';
+    }
+
+    /**
+     * 保存批量检测结果（下载ZIP）
+     */
+    async function saveBatchResult() {
+        if (!currentBatchResult) {
+            alert('暂无批量检测结果可保存！');
+            return;
+        }
+        
+        const saveBtn = document.getElementById('saveBatchResultBtn');
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在保存...';
+        
+        try {
+            const fd = new FormData();
+            fd.append('total_files', currentBatchResult.total_files);
+            fd.append('success_count', currentBatchResult.success_count);
+            fd.append('class_stats', JSON.stringify(currentBatchResult.class_stats));
+            fd.append('detection_results', JSON.stringify(currentBatchResult.detection_results));
+            
+            const res = await callAPI('/api/save-batch-result', fd);
+            
+            if (res.success && res.download_url) {
+                // 触发下载
+                window.open(res.download_url, '_blank');
+                
+                // 显示保存状态
+                const statusText = document.getElementById('batchSaveStatusText');
+                statusText.style.display = 'block';
+                statusText.textContent = '✅ 批量结果保存成功，下载链接已打开！';
+                
+                // 3秒后清空状态
+                setTimeout(() => {
+                    statusText.textContent = '';
+                }, 3000);
+            } else {
+                alert('保存失败：' + (res.error || '未知错误'));
+            }
+        } catch (error) {
+            alert('保存失败：' + error.message);
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '保存批量结果';
+        }
+    }
+
+    /**
+     * 视频检测
+     */
+    async function predictVideo() {
+        const fileInput = document.getElementById('videoUpload');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert('请先上传视频文件！');
+            return;
+        }
+        
+        // 验证文件类型
+        if (!file.type.includes('video/')) {
+            alert('请上传有效的视频文件（MP4格式）！');
+            return;
+        }
+        
+        // 按钮状态更新
+        const btn = document.getElementById('videoPredictBtn');
+        btn.disabled = true; 
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 处理中(较慢)...';
+        
+        // 构建表单数据
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('confidence', document.getElementById('videoConfidenceValue').textContent);
+        fd.append('interval', document.getElementById('frameInterval').value);
+        
+        // 调用API
+        const res = await callAPI('/api/video-predict', fd);
+        
+        if (res.success) {
+            // 显示处理后的视频
+            const resultVideo = document.getElementById('detectResultVideo');
+            resultVideo.src = res.processed_video_url;
+            resultVideo.style.display = 'block';
+            document.getElementById('videoResultPlaceholder').style.display = 'none';
+            
+            // 显示统计信息
+            document.getElementById('videoResultText').value = JSON.stringify({
+                总帧数: res.total_frames,
+                处理帧数: res.processed_frames,
+                总耗时: `${res.total_time}秒`,
+                抽帧间隔: `${document.getElementById('frameInterval').value}帧`,
+                检测类别统计: res.class_stats
+            }, null, 2);
+        } else {
+            alert('视频检测失败：' + (res.error || '未知错误'));
+        }
+        
+        // 恢复按钮状态
+        btn.disabled = false; 
+        btn.innerHTML = '<i class="fas fa-play"></i> 开始视频检测';
+    }
+
+    // ========== 视频检测结果保存 ==========
+async function saveVideoResult() {
+    if (!currentVideoResult) {
+        showStatus('无视频检测结果可保存', 'warning');
+        return;
+    }
+
+    try {
+        updateConnectionStatus('正在保存视频检测结果...', 'warning');
+        
+        // 构造FormData（与后端接口参数严格匹配）
+        const formData = new FormData();
+        formData.append('original_filename', currentVideoResult.original_filename || '');
+        formData.append('confidence', parseFloat(document.getElementById('videoConfidenceValue').textContent));
+        formData.append('frame_interval', parseInt(document.getElementById('frameInterval').value));
+        formData.append('total_frames', currentVideoResult.total_frames || 0);
+        formData.append('detected_frames', currentVideoResult.detected_frames || 0);
+        formData.append('class_stats', JSON.stringify(currentVideoResult.class_stats || {}));
+        formData.append('detect_time', currentVideoResult.detect_time || 0);
+        formData.append('video_url', currentVideoResult.processed_video_url || '');
+
+        // 调用保存接口
+        const response = await fetch(`${SERVER_BASE_URL}/api/save-video-result`, {
+            method: 'POST',
+            body: formData,
+            timeout: 60000 // 视频文件大，超时设为60秒
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            document.getElementById('videoSaveStatusText').style.display = 'block';
+            document.getElementById('videoSaveStatusText').textContent = `保存成功！下载链接：${result.download_url}`;
+            // 自动触发下载（可选）
+            window.open(result.download_url, '_blank');
+            updateConnectionStatus('视频结果保存成功', 'connected');
+        } else {
+            throw new Error(result.error || '保存失败');
+        }
+    } catch (error) {
+        updateConnectionStatus(`保存失败：${error.message}`, 'disconnected');
+        alert(`保存视频结果失败：${error.message}`);
+    }
+}
+
+// 绑定视频保存按钮事件
+document.getElementById('saveVideoResultBtn').addEventListener('click', saveVideoResult);
+   </script>
+</body>
+</html>
