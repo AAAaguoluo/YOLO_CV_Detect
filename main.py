@@ -776,8 +776,10 @@ if __name__ == "__main__":
     "main:app",
     host=HOST,
     port=PORT,
-    ssl_keyfile=r"C:\Users\mjuGGbond\key.pem",  # 私钥文件
-    ssl_certfile=r"C:\Users\mjuGGbond\cert.pem", # 证书文件
+    #ssl_keyfile=r"C:\Users\mjuGGbond\key.pem",  # 私钥文件
+    #ssl_certfile=r"C:\Users\mjuGGbond\cert.pem", # 证书文件
+    ssl_keyfile=os.path.expanduser(r"~/key.pem"), # 私钥文件
+    ssl_certfile = os.path.expanduser(r"~/cert.pem"), # 证书文件
     reload=True
 )
     
